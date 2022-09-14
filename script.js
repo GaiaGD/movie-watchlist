@@ -4,7 +4,7 @@ let watchlistRaw = []
 let watchlistToShow = ''
 let ratingNA = "NA"
 
-
+/// ADD TO WATCHLIST ________________________________________________________________________________________
 async function addToWatchlist(event){
     let idToAdd = event.target.id;
 
@@ -27,17 +27,19 @@ async function addToWatchlist(event){
     localStorage.setItem('itemsArray', JSON.stringify(oldMovieEntry));
 }
 
+/// REMOVE FROM WATCHLIST ________________________________________________________________________________________
 function removeFromWatchlist(event){
     let idToRemove = event.target.id;
-    watchlist.map(addedMovie => {
-        if (idToRemove == addedMovie.IMBD){
-            watchlist.splice(addedMovie, 1);
-        }
-    })
-    localStorage.setItem('itemsArray', JSON.stringify(watchlist))
+    console.log(watchlist)
+
+    const newWatchlist = watchlist.filter(movie => movie.IMBD !== idToRemove)
+    console.log(newWatchlist)
+
+    localStorage.setItem('itemsArray', JSON.stringify(newWatchlist))
     location.reload(true)
 }
 
+/// WATCHLIST PAGE ________________________________________________________________________________________
 let loadWatchlist = () => {
     let emptyWatchlist = `
     <div class="empty d-flex justify-content-center align-items-center">
@@ -105,61 +107,64 @@ let loadWatchlist = () => {
     }
 }
 
+/// SHOW MOVIE SEARCH ________________________________________________________________________________________
 async function getMovieResults(event){
     event.preventDefault()
     let titleTyped = document.getElementById("titleTyped").value
     const res = await fetch (`https://www.omdbapi.com/?apikey=${apiKey}&s=${titleTyped}&plot=short&r=json`)
 
-    if (res.status == 401) {
-        alert("Too Many Requests!")
+    if (res.status !== 200) {
+        alert("Try again tomorrow!")
     } else {
-
         const data = await res.json()
         let rawResults = data.Search
-        movieResult = ''
+        if (rawResults !== undefined){
+            movieResult = ''
 
+            for (let movie of rawResults){
+                let IMDBcode = movie.imdbID
+                const res2 = await fetch (`https://www.omdbapi.com/?i=${IMDBcode}&apikey=685b2f86`)
+                const singleMovie = await res2.json()
 
-        for (let movie of rawResults){
-            let IMDBcode = movie.imdbID
-            const res2 = await fetch (`https://www.omdbapi.com/?i=${IMDBcode}&apikey=685b2f86`)
-            const singleMovie = await res2.json()
+                movieResult += `
 
-            movieResult += `
-
-            <div class="movie-title d-sm-none d-block col">${movie.Title}</div>
-            <div class="d-flex justify-content-center align-items-center my-3 pb-5 bottom-line">
-                <div class="col-sm-3 col-4">
-                    <img class="poster" src="${movie.Poster}" />
-                </div>
-
-                <div class="col">
-
-                    <div class="row-two d-flex">
-                        <span class="movie-title pr-3 d-none d-sm-block">${movie.Title}</span>
-                        <span class="rating pr-1">
-                            <img class="star" src="./img/star.png"/></span>
-                        <span>${singleMovie.Ratings.length > 0 ? singleMovie.Ratings[0].Value : ratingNA}</span>
+                <div class="movie-title d-sm-none d-block col">${movie.Title}</div>
+                <div class="d-flex justify-content-center align-items-center my-3 pb-5 bottom-line">
+                    <div class="col-sm-3 col-4">
+                        <img class="poster" src="${movie.Poster}" />
                     </div>
 
-                    <div class="row col justify-content-between">
-                        <p class="col-sm-6 col-12 p-0 pr-3 m-0 info">${singleMovie.Runtime}, ${singleMovie.Genre}</p>
-                        <div class="col-sm-3 col-12 watchlist-button d-flex justify-content-sm-between align-items-center justify-content-center">
-                            <img id="${singleMovie.imdbID}" onclick="addToWatchlist(event)" class="p-1 mb-1 mr-1 add" src="./img/add.png"/>
-                            <p id="${singleMovie.imdbID}" class="mb-0" onclick="addToWatchlist(event)">Watchlist</p>
+                    <div class="col">
+
+                        <div class="row-two d-flex">
+                            <span class="movie-title pr-3 d-none d-sm-block">${movie.Title}</span>
+                            <span class="rating pr-1">
+                                <img class="star" src="./img/star.png"/></span>
+                            <span>${singleMovie.Ratings.length > 0 ? singleMovie.Ratings[0].Value : ratingNA}</span>
                         </div>
-                    </div>
 
-                    <div class="row-three mt-2">
-                        <p class="plot">${singleMovie.Plot}</p>
-                    </div>
+                        <div class="row col justify-content-between">
+                            <p class="col-sm-6 col-12 p-0 pr-3 m-0 info">${singleMovie.Runtime}, ${singleMovie.Genre}</p>
+                            <div class="col-sm-3 col-12 watchlist-button d-flex justify-content-sm-between align-items-center justify-content-center">
+                                <img id="${singleMovie.imdbID}" onclick="addToWatchlist(event)" class="p-1 mb-1 mr-1 add" src="./img/add.png"/>
+                                <p id="${singleMovie.imdbID}" class="mb-0" onclick="addToWatchlist(event)">Watchlist</p>
+                            </div>
+                        </div>
 
+                        <div class="row-three mt-2">
+                            <p class="plot">${singleMovie.Plot}</p>
+                        </div>
+
+                    </div>
                 </div>
-            </div>
-            <hr>
-            `
-        }
+                <hr>
+                `
+            }
 
-        document.getElementById('results').innerHTML = movieResult
+            document.getElementById('results').innerHTML = movieResult
+        } else {
+            alert("Mmm, try using another word")
+        }
     }
 }
 
